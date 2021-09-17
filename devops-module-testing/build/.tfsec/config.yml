@@ -1,0 +1,9 @@
+# Use this file to add exclusions
+
+# Severity Overrides
+# severity_overrides:
+#   CUS001: LOW
+
+  # Excluding Checks
+  # exclude:
+  # - CUS001

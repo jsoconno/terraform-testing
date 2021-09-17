@@ -1,0 +1,132 @@
+name: $(Build.DefinitionName)_$(Build.SourceBranchName).$(rev:r)
+
+# Specific branch build
+trigger:
+  branches:
+    include:
+    - master
+    exclude:
+    - README.md
+
+variables:
+- group: terraform-vars-dev-core-c72acede-kvl
+- name: module-directory
+  value: $(System.DefaultWorkingDirectory)
+- name: test-directory
+  value: $(System.DefaultWorkingDirectory)/test
+- name: build-directory
+  value: $(System.DefaultWorkingDirectory)/build
+- name: service-connection
+  value: development
+
+# Stages to execute
+stages:
+  - stage: TestModule
+    displayName: TestModule
+    pool:
+      name: DevAgentPool
+    jobs:
+    - job: TestModule
+      workspace:
+        clean: all
+      displayName: TestModule
+      steps:
+
+      # Lint the terraform code to ensure it meets our basic coding standards
+      - task: AzureCLI@2
+        displayName: Perform Terraform Linting
+        inputs:
+          azureSubscription: $(service-connection)
+          scriptLocation: inlineScript
+          workingDirectory: $(module-directory)
+          scriptType: ps
+          inlineScript: |
+            tflint --version
+            Write-Output "Details about tflint rules can be found at: https://github.com/terraform-linters/tflint/blob/master/docs/rules/README.md"
+            $xml = tflint `
+            --enable-rule=terraform_unused_declarations `
+            --enable-rule=terraform_naming_convention `
+            --enable-rule=terraform_deprecated_interpolation `
+            --enable-rule=terraform_comment_syntax `
+            --enable-rule=terraform_typed_variables `
+            --enable-rule=terraform_unused_required_providers `
+            --enable-rule=terraform_standard_module_structure `
+            --enable-rule=terraform_documented_variables `
+            --format junit
+            $xml | Set-Content -Encoding UTF8 $(test-directory)/test_output/linting.xml
+            
+            # for linux you can simply use ...
+            # tflint --enable-rule=terraform_unused_declarations --format junit > $(test-directory)/test_output/linting.xml
+            # ... without the conversion for utf-8 encoding
+        condition: always()
+
+      - task: PublishTestResults@2
+        displayName: Publish Linting Results
+        inputs:
+          testResultsFormat: JUnit
+          testResultsFiles: $(test-directory)/test_output/linting.xml
+          testRunTitle: $(System.JobDisplayName)
+        condition: succeededOrFailed()
+
+      # Perform a static security scan of the code to identify vulnerabilities before deployment
+      - task: AzureCLI@2
+        displayName: Perform Security Scanning
+        inputs:
+          azureSubscription: $(service-connection)
+          scriptLocation: inlineScript
+          workingDirectory: $(build-directory)
+          scriptType: ps
+          inlineScript: |
+            tfsec --version
+            Write-Output "Details about tfsec can be found at: https://tfsec.dev/docs/installation/"
+            terraform init
+            tfsec . --tfvars-file terraform.tfvars --format JUnit > $(test-directory)/test_output/security_scan.xml
+            Get-Content $(test-directory)/test_output/security_scan.xml -Encoding Unicode | Set-Content -Encoding UTF8 $(test-directory)/test_output/security_scan_utf8.xml
+            
+            # for linux you can simply use ...
+            # tfsec . --tfvars-file terraform.tfvars --format JUnit > $(System.DefaultWorkingDirectory)/test/test_output/security_scan.xml
+            # ... without the conversion for utf-8 encoding
+        condition: always()
+
+      - task: PublishTestResults@2
+        displayName: Publish Security Scan Results
+        inputs:
+          testResultsFormat: JUnit
+          testResultsFiles: $(test-directory)/test_output/security_scan_utf8.xml
+          testRunTitle: $(System.JobDisplayName)
+        condition: succeededOrFailed()
+
+      # Perform a real deployment to do integration testing if linting and security scanning pass      
+      - task: AzureCLI@2
+        displayName: Perform Integration Testing
+        inputs:
+          azureSubscription: $(service-connection)
+          workingDirectory: $(test-directory)
+          scriptType: ps
+          scriptLocation: inlineScript
+          addSpnToEnvironment: true
+          inlineScript: |
+            go version
+            go test -v -timeout 60m | tee -FilePath $(test-directory)/test_output.log
+            Get-Content -Path $(test-directory)/test_output.log | Set-Content -Encoding utf8 test_output_utf8.log
+            terratest_log_parser -testlog test_output_utf8.log -outputdir test_output
+            # We not have to parse the log to get the failure if there is one because we swallowed it in our pipe
+            [xml]$xml = Get-Content -Path $(test-directory)/test_output/report.xml
+            $failures = [int]$xml.testsuites.testsuite.failures
+            if ($failures -ne 0) {
+              exit 1
+            }
+            
+            # for linux you can simply use ...
+            # go test -v -timeout 30m | tee test_output.log
+            # terratest_log_parser -testlog test_output.log -outputdir test_output
+            # ... without the conversion for utf-8 encoding
+        condition: succeeded()
+
+      - task: PublishTestResults@2
+        displayName: Publish Integration Test Results
+        inputs:
+          testResultsFormat: JUnit
+          testResultsFiles: $(test-directory)/test_output/report.xml
+          testRunTitle: $(System.JobDisplayName)
+        condition: succeededOrFailed()

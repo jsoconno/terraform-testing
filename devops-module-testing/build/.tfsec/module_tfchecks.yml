@@ -1,0 +1,19 @@
+# Add custom checks to this file
+
+# checks:
+- code: TAG001
+  description: Resources should have the Environment tag.
+  impact: By not having the Environment tag we can effectively report on cloud costs.
+  resolution: Add the Environment tag
+  requiredTypes:
+  - module
+  requiredLabels:
+  - windows_vm
+  severity: MEDIUM
+  matchSpec:
+    name: tags
+    action: contains
+    value: Environment
+  errorMessage: The required Environment tag was missing
+  # relatedLinks:
+  # - http://internal.acmecorp.com/standards/aws/tagging.html
