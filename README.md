@@ -129,9 +129,9 @@ module-root
 │   └── module_test.go
 │
 ├── .gitignore
+├── documentation.md
 ├── main.tf
 ├── outputs.tf
-├── README.md
 └── variables.tf
 ```
 The repository `root` contains the files that you always have has part of your module definition including:
