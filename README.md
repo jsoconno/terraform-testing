@@ -101,10 +101,10 @@ The pipeline runs under the context of an Azure DevOps service connection.  To c
 * **Microsoft Graph**
   * User.Read
 
-The details about your tenant and service principal should be updated in the `build/terraform.tfvars` file under the `devops-module-testing` folder.
+The details about your tenant and service principal should be updated in the `build/terraform.tfvars` file.
 
 ## Repo Structure
-All code for this example can be found in the [devops-module-testing](devops-module-testing/README.md) folder.  This folder represents the root of your module repository.  Here is the structure:
+Below is an overview of the structure of this repo.
 
 ```
 module-root
@@ -137,8 +137,9 @@ module-root
 The repository `root` contains the files that you always have has part of your module definition including:
 
 * A `main.tf` file where all data sources, resources, versions, and other details are maintained
-* A `variables.tf` file that defines the inputs for your module as well as their defaults, types, and descriptions.
-* An `outputs.tf` file that contians the outputs that may be used by other pipelines and will be referenced when testing your module with Terratest.
+* A `variables.tf` file that defines the inputs for your module as well as their defaults, types, and descriptions
+* An `outputs.tf` file that contians the outputs that may be used by other pipelines and will be referenced when testing your module with Terratest
+* A `documentation.md` file that contains all of the details about the module
 
 The `build` folder contains all files used to create the desired module during your tests.  This includes any provider definitions, variable inputs or resource references required.
 
@@ -169,11 +170,11 @@ For integration testing with **Terratest**:
 
 ## Running Code in the Pipeline
 
-The `azure-pipelines.yml` file in the `devops-module-testing/pipeline` folder contains a YAML definition of the pipeline and is set up to run on a Windows self-hosted agent.
+The `azure-pipelines.yml` file in the `pipeline` folder contains a YAML definition of the pipeline and is set up to run on a Windows self-hosted agent.
 
-First create a new repo called `terraform-module-windows-vm`.  Then copy all of the folders and files out of the `devops-module-testing` folder in this repo and place them at the repository root.
+First create a new repo called `terraform-module-windows-vm`.  Then clone this code and put it in your repository.
 
-Then, go to Pipelines and select new pipeline following the prompts to set up a pipeline based on your Git repo.  Select the Azure pipelines file.
+Then, go to Azure DevOps Pipelines and select new pipeline following the prompts to set up a pipeline based on your Git repo.  Select the Azure pipelines file.
 
 Now, you will need to update the YAML file with the name of your agent pool and service connection.  Everything else should work as is!
 
