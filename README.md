@@ -4,7 +4,7 @@
 
 ## Introduction
 
-The purpose of this repository is to provide an example setup for how you can test your Terraform modules for code quality, security, and reliability with open source tools.
+The purpose of this repository is to provide an example setup for how you can test your Terraform modules for code quality, security, and reliability with open source tools. This repository serves as a comprehensive reference implementation for DevOps teams looking to implement automated testing in their Terraform workflows.
 
 While this example uses Azure DevOps and a Terraform module example for Azure, the same principles, approaches, and structures can be used for any Terraform module on any cloud provider with some minor changes.  
 
