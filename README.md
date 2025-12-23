@@ -1,5 +1,7 @@
 # Terraform Testing Patterns
 
+*Last updated: December 2024 - Verified compatibility with latest tooling versions*
+
 ## Introduction
 
 The purpose of this repository is to provide an example setup for how you can test your Terraform modules for code quality, security, and reliability with open source tools.
